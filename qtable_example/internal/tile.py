@@ -28,4 +28,4 @@ class Tile:
         self.reward = reward
 
     def __repr__(self) -> str:
-        return f"Tile(grid_position={self.grid_position}, size={self.size}, color={self.color}, empty={self.empty}, reward={self.reward})"
+        return f"Tile(grid_position={self.grid_position}, size={self.size}, empty={self.empty}, reward={self.reward}, is_terminal={self.is_terminal})"

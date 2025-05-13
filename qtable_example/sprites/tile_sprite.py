@@ -11,8 +11,9 @@ class TileSprite(pygame.sprite.Sprite):
         display_reward: bool = False,
         screen_coordinates: tuple[int, int] = (0, 0),
         max_reward: float = 10.0,
+        camera_group: pygame.sprite.Group | None = None,
     ):
-        super().__init__()
+        super().__init__(camera_group)
         self.tile = tile
         self.font = font
         self.display_reward = display_reward
@@ -27,7 +28,7 @@ class TileSprite(pygame.sprite.Sprite):
         self.image.fill(self.tile_color)
         if self.display_reward and self.tile.reward is not None:
             text_surface = self.font.render(
-                str(self.tile.reward), True, (255, 255, 255)
+                str(round(self.tile.reward, 2)), True, (255, 255, 255)
             )
             text_rect = text_surface.get_rect(
                 center=(self.tile.size // 2, self.tile.size // 2)

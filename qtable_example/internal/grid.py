@@ -11,155 +11,55 @@ class Grid:
     """
 
     DIRECTIONS_DELTA_MAP = {
-        Directions.UP: (0, -1),
-        Directions.DOWN: (0, 1),
-        Directions.LEFT: (-1, 0),
-        Directions.RIGHT: (1, 0),
+        Directions.UP: (-1, 0),
+        Directions.DOWN: (1, 0),
+        Directions.LEFT: (0, -1),
+        Directions.RIGHT: (0, 1),
         Directions.UP_LEFT: (-1, -1),
-        Directions.UP_RIGHT: (1, -1),
-        Directions.DOWN_LEFT: (-1, 1),
+        Directions.UP_RIGHT: (-1, 1),
+        Directions.DOWN_LEFT: (1, -1),
         Directions.DOWN_RIGHT: (1, 1),
     }
 
     MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = (
-        0.5  # Probabilidade de criar um subcaminho
+        0.3  # Probabilidade de criar um subcaminho
     )
 
     def __init__(
         self,
         tile_size: int = 32,
         grid_size: tuple[int, int] = (10, 10),
-        max_reward: float = 10.0,
     ):
         self.grid_size = grid_size
         self.tile_size = tile_size
         self._grid = self.generate_base_grid(tile_size)
-        self.max_reward = max_reward
 
-    def generate_random_map(
-        self,
-        max_length: int = 30,
-        start_tile_position: tuple[int, int] = (0, 0),
-        seed: int | None = None,
-    ):
+    def get_tile(self, position: tuple[int, int]) -> Tile:
         """
-        Gera um mapa aleatório com base em um ponto de partida e uma semente opcional.
+        Retorna a tile em uma posição específica.
 
         Args:
-            max_length (int): Comprimento máximo do caminho.
-            start_tile_position (tuple[int, int]): Posição inicial no grid.
-            seed (int | None): Semente para geração aleatória.
+            position (tuple[int, int]): Posição no grid (linha, coluna).
 
         Returns:
-            dict[tuple[int, int], Tile]: Mapa gerado.
+            Tile: Tile na posição especificada.
         """
-        if not start_tile_position:
-            start_tile_position = self.get_grid_center()
+        return self._grid.get(position, None)
 
-        if seed is not None:
-            random.seed(seed)
+    def set_tile(self, position: tuple[int, int], tile: Tile):
+        """
+        Define uma tile em uma posição específica.
+
+        Args:
+            position (tuple[int, int]): Posição no grid (linha, coluna).
+            tile (Tile): Tile a ser definida na posição especificada.
+        """
+        if not self.is_out_of_bounds(position):
+            self._grid[position] = tile
         else:
-            random.seed(random.randint(0, 100))
-
-        start_tile = Tile(
-            grid_position=start_tile_position,
-            size=self.tile_size,
-            empty=False,
-        )
-        self._grid[start_tile_position] = start_tile
-
-        self.generate_path(start_tile, max_length=max_length)
-
-        # Gera recompensas para as tiles
-        solution = self.choose_random_solution()
-        self.generate_rewards(solution)
-
-    def generate_path(
-        self,
-        start_tile: Tile,
-        max_length: int = 30,
-    ):
-        """
-        Gera um caminho aleatório a partir de uma tile inicial.
-
-        Args:
-            start_tile (Tile): Tile inicial.
-            max_length (int): Comprimento máximo do caminho.
-
-        Returns:
-            dict[tuple[int, int], Tile]: Mapa gerado.
-        """
-        last_tile = start_tile
-        current_length = 0
-
-        while current_length < max_length:
-
-            p = random.random()
-            if p < self.MAP_GENERATION_CREATE_SUBPATH_PROBABILITY:
-                self.generate_path(
-                    start_tile=last_tile, max_length=max_length - current_length
-                )
-
-            available_directions = self._get_valid_directions(last_tile)
-
-            if not available_directions:
-                break
-
-            # Tenta adicionar um tile de modo que a quanitdade de
-            # tiles vizinhos seja < 2
-            try:
-                while available_directions:
-                    direction = random.choice(available_directions)
-                    available_directions.remove(direction)
-                    neighbors = self.get_neighbors(
-                        self.get_position_following_direction(
-                            start_tile.grid_position, direction
-                        ),
-                        diagonal=False,
-                    )
-
-                    neighbors_count = sum(
-                        1 for neighbor in neighbors.values() if neighbor is not None
-                    )
-                    if neighbors_count < 2:
-                        break
-                    direction = None
-                if direction is None:
-                    break
-
-                new_tile = self.add_on(last_tile, direction)
-                new_tile.reward = 1
-                self._grid[new_tile.grid_position] = new_tile
-                last_tile = new_tile
-                current_length += 1
-
-            except OutOfBoundsError:
-                pass
-            except AlreadyOccupiedError:
-                pass
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                break
-
-    def _get_valid_directions(
-        self,
-        tile: Tile,
-    ):
-
-        neighbors = self.get_neighbors(tile.grid_position, diagonal=False)
-
-        # seleciona apenas as direções válidas (vazias) para adicionar uma nova tile
-        valid_directions = [
-            direction
-            for direction, neighbor_cell in neighbors.items()
-            if neighbor_cell is None
-            and self.get_position_following_direction(
-                position=tile.grid_position,
-                direction=direction,
+            raise OutOfBoundsError(
+                f"Position {position} is out of bounds for the grid size {self.grid_size}."
             )
-            in self._grid
-        ]
-        return valid_directions
 
     def generate_base_grid(self, tile_size: int) -> dict[tuple[int, int], Tile]:
         grid = {}
@@ -320,55 +220,37 @@ class Grid:
         """
         return (self.grid_size[0] // 2, self.grid_size[1] // 2)
 
-    def generate_rewards(self, desired_solution: Tile):
-
-        for cell in self._grid.values():
-            distance = self.calculate_distance(cell, desired_solution)
-            reward = (
-                (1 / distance) * self.max_reward if distance > 0 else self.max_reward
-            )
-            cell.reward = round(reward, 2)
-
-    def terminal_cell_detection(self):
-        terminal_cells = []
-        for cell in self._grid.values():
-            if not cell.empty:
-                neighbors = self.get_neighbors(cell.grid_position, diagonal=False)
-                neighbors_count = sum(
-                    1 for neighbor in neighbors.values() if neighbor is not None
-                )
-                if neighbors_count == 1:
-                    terminal_cells.append(cell)
-        return terminal_cells
-
-    def choose_random_solution(self) -> Tile:
+    def is_terminal(self, position: tuple[int, int]) -> bool:
         """
-        Escolhe uma solução aleatória entre as tiles não vazias.
-
-        Returns:
-            Tile: Tile escolhida como solução.
-        """
-        terminal_cells = self.terminal_cell_detection()
-        if not terminal_cells:
-            raise ValueError("No terminal cells found in the grid.")
-        return random.choice(terminal_cells)
-
-    def calculate_distance(
-        self,
-        tile1: Tile,
-        tile2: Tile,
-    ) -> float:
-        """
-        Calcula a distância entre duas tiles.
+        Verifica se uma posição é uma célula terminal.
 
         Args:
-            tile1 (Tile): Primeira tile.
-            tile2 (Tile): Segunda tile.
+            position (tuple[int, int]): Posição no grid (linha, coluna).
 
         Returns:
-            float: Distância entre as duas tiles.
+            bool: True se a posição for uma célula terminal, False caso contrário.
         """
-        return (
-            (tile1.grid_position[0] - tile2.grid_position[0]) ** 2
-            + (tile1.grid_position[1] - tile2.grid_position[1]) ** 2
-        ) ** 0.5
+        neighbors = self.get_neighbors(position)
+        return sum(1 for neighbor in neighbors.values() if neighbor is not None) == 1
+
+    @property
+    def terminal_cells(self) -> dict[tuple[int, int], Tile]:
+        """
+        Retorna um dicionário com as células terminais do grid.
+
+        Returns:
+            dict[tuple[int, int], Tile]: Dicionário com as células terminais.
+        """
+        return {
+            position: tile
+            for position, tile in self._grid.items()
+            if self.is_terminal(position)
+        }
+
+    def generate_random_solution(self, only_terminal: bool = False) -> Tile:
+        """
+        Gera uma solução aleatória para o grid.
+        """
+        if only_terminal:
+            return random.choice(list(self.terminal_cells.values()))
+        return random.choice(list(self._grid.values()))

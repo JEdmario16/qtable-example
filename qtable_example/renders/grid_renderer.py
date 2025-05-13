@@ -1,18 +1,19 @@
 import pygame
 
 from qtable_example.internal.grid import Grid
-from qtable_example.internal.tile import Tile
 from qtable_example.sprites.tile_sprite import TileSprite
+from qtable_example.renders.camera_render import CameraGroup
 
 
 class GridRenderer(pygame.sprite.Group):
 
-    EMPTY_TILE_COLOR = (0, 0, 0)  # Preto
-    OCCUPIED_TILE_COLOR = (255, 0, 0)  # Vermelho
+    EMPTY_TILE_COLOR = (64, 57, 64)  # Cinza escuro
+    OCCUPIED_TILE_COLOR = (12, 183, 188)  # Azul claro
 
     def __init__(
         self,
         grid: Grid,
+        camera_group: CameraGroup,
         grid_start_position: tuple[int, int] = (0, 0),
     ):
         """
@@ -20,14 +21,17 @@ class GridRenderer(pygame.sprite.Group):
 
         Args:
             grid (Grid): Instância do grid a ser renderizado.
+            camera_group (CameraGroup): Grupo de câmera para renderização.
+            grid_start_position (tuple[int, int]): Posição inicial do grid na tela.
         """
-        super().__init__()
+        super().__init__(camera_group)
         self.grid = grid
         self.font = pygame.font.Font(None, 36)
         self.grid_start_position = grid_start_position
         self.tiles = {}
         self.tile_size = self.grid.tile_size
-
+        self.camera_group = camera_group
+        self.grid_start_position = grid_start_position
         self._initialize_tiles()
 
     def update(self):
@@ -41,6 +45,7 @@ class GridRenderer(pygame.sprite.Group):
         self.empty()
         for cell in self.grid._grid.values():
             tile = TileSprite(
+                camera_group=self.camera_group,
                 tile=cell,
                 font=self.font,
                 tile_color=(
@@ -72,76 +77,81 @@ class GridRenderer(pygame.sprite.Group):
         y = self.grid_start_position[1] + row * self.grid.tile_size
         return x, y
 
-    def draw_grid_lines(self, surface: pygame.Surface):
+    def interpolate_color(self, base_color, target_color, factor: float):
         """
-        Desenha as linhas do grid na superfície fornecida.
-
-        Args:
-            surface (pygame.Surface): Superfície onde o grid será desenhado.
+        Interpola entre duas cores com base em um fator de 0.0 (cor base) a 1.0 (cor alvo).
         """
+        return tuple(
+            int(base + (target - base) * factor)
+            for base, target in zip(base_color, target_color)
+        )
 
-        width = self.grid.grid_size[1] * self.tile_size
-        height = self.grid.grid_size[0] * self.tile_size
-        start_x, start_y = self.grid_start_position
-
-        line_color = (100, 100, 100)  # cinza escuro
-        for row in range(self.grid.grid_size[0] + 1):
-            y = start_y + row * self.tile_size
-            pygame.draw.line(surface, line_color, (start_x, y), (start_x + width, y))
-
-        for col in range(self.grid.grid_size[1] + 1):
-            x = start_x + col * self.tile_size
-            pygame.draw.line(surface, line_color, (x, start_y), (x, start_y + height))
-
-    def reward_to_color(self, reward: float) -> tuple[int, int, int]:
+    def reward_to_color(self, reward, min_reward=0, max_reward=10):
         """
-        Converte a recompensa em uma cor RGB.
-
-        Args:
-            max_reward (float): Recompensa máxima para normalização.
-
-        Returns:
-            tuple[int, int, int]: Cor RGB correspondente à recompensa.
+        Retorna uma cor do gradiente vermelho → amarelo → verde
+        com base no valor da recompensa.
         """
-        if self.grid.max_reward == 0:
-            return (0, 0, 0)
+        # Normaliza a reward entre 0.0 e 1.0
+        factor = (
+            (reward - min_reward) / (max_reward - min_reward)
+            if max_reward != min_reward
+            else 0.5
+        )
+        factor = max(0.0, min(1.0, factor))  # clamp
 
-        t = max(0.0, min(reward / self.grid.max_reward, 1.0))
-        r = int(255 * t)
-        g = int(255 * (1 - t))
-        b = int(255 * (1 - t))
+        # Interpola entre vermelho (255,0,0) → amarelo (255,255,0) → verde (0,255,0)
+        if factor < 0.5:
+            # vermelho → amarelo
+            r = 255
+            g = int(255 * (factor / 0.5))
+            b = 0
+        else:
+            # amarelo → verde
+            r = int(255 * (1 - (factor - 0.5) / 0.5))
+            g = 255
+            b = 0
+
         return (r, g, b)
 
 
-import pygame
+# import pygame
 
-screen_size = (1920, 1080)
-pygame.init()
-screen = pygame.display.set_mode(screen_size)
-pygame.display.set_caption("Grid Renderer Example")
-clock = pygame.time.Clock()
-running = True
-grid_render = GridRenderer(
-    grid=Grid(tile_size=64, grid_size=(50, 50)),
-    grid_start_position=(0, 0),
-)
+# screen_size = (1920, 1080)
+# pygame.init()
+# screen = pygame.display.set_mode(screen_size)
+# pygame.display.set_caption("Grid Renderer Example")
+# clock = pygame.time.Clock()
+# running = True
+# camera = CameraGroup()
 
-grid_render.grid.generate_random_map(max_length=30, seed=41)
+# camera_center = CameraCenter(camera_group=camera)
+# grid_render = GridRenderer(
+#     grid=Grid(tile_size=64, grid_size=(50, 50)),
+#     grid_start_position=(0, 0),
+#     camera_group=camera
+# )
 
-grid_render._initialize_tiles()
-grid_render.update()
+
+# grid_render.grid.generate_random_map(max_length=100, seed=41)
+
+# grid_render._initialize_tiles()
+# grid_render.update()
 
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+# while running:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             running = False
 
-    screen.fill((0, 0, 0))
-    grid_render.draw(screen)
-    grid_render.update()
-    grid_render.draw_grid_lines(screen)
+#     # screen.fill((0, 0, 0))
+#     # grid_render.draw(screen)
+#     # grid_render.update()
 
-    pygame.display.flip()
-    clock.tick(60)
-pygame.quit()
+#     screen.fill((255, 255, 255))
+
+#     camera.update()
+#     camera.custom_draw(camera_center)
+
+#     pygame.display.update()
+#     clock.tick(60)
+# pygame.quit()

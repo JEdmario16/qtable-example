@@ -21,18 +21,16 @@ class Grid:
         Directions.DOWN_RIGHT: (1, 1),
     }
 
-    MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = (
-        0.3  # Probabilidade de criar um subcaminho
-    )
-
     def __init__(
         self,
         tile_size: int = 32,
         grid_size: tuple[int, int] = (10, 10),
+        max_reward: float = 10.0,
     ):
         self.grid_size = grid_size
         self.tile_size = tile_size
         self._grid = self.generate_base_grid(tile_size)
+        self.max_reward = max_reward
 
     def get_tile(self, position: tuple[int, int]) -> Tile:
         """
@@ -252,5 +250,9 @@ class Grid:
         Gera uma solução aleatória para o grid.
         """
         if only_terminal:
-            return random.choice(list(self.terminal_cells.values()))
-        return random.choice(list(self._grid.values()))
+            solution = random.choice(list(self.terminal_cells.values()))
+        else:
+            solution = random.choice(list(self._grid.values()))
+        solution.reward = self.max_reward
+        solution.empty = False
+        return solution

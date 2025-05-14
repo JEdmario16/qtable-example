@@ -2,9 +2,10 @@ import pygame
 
 
 class CameraGroup(pygame.sprite.Group):
-    def __init__(self):
+    def __init__(self, display_surface, camera_internal_surface_size=(4000, 4000)):
         super().__init__()
-        self.display_surface = pygame.display.get_surface()
+        self.display_surface = display_surface
+        self.internal_surface_size = camera_internal_surface_size
 
         # camera offset
         self.offset = pygame.math.Vector2()
@@ -13,7 +14,6 @@ class CameraGroup(pygame.sprite.Group):
 
         # zoom
         self.zoom_scale = 1.0
-        self.internal_surface_size = (4000, 4000)
         self.internal_surface = pygame.Surface(
             self.internal_surface_size, pygame.SRCALPHA
         )
@@ -28,11 +28,20 @@ class CameraGroup(pygame.sprite.Group):
         self.internal_offset.y = self.internal_surface_size_vector.y // 2 - self.half_h
 
     def center_target_camera(self, target):
-        self.offset.x = target.rect.centerx - self.half_w
-        self.offset.y = target.rect.centery - self.half_h
+
+        new_offset_x = target.rect.centerx
+        new_offset_y = target.rect.centery
+
+        self.offset.x = new_offset_x
+        self.offset.y = new_offset_y
 
     def zoom_keyboard_control(self):
         keys = pygame.key.get_pressed()
+        if self.zoom_scale == 1:
+            return
+        elif self.zoom_scale < 0.5:
+            return
+
         if keys[pygame.K_q]:
             self.zoom_scale += 0.1
         elif keys[pygame.K_e]:
@@ -42,19 +51,17 @@ class CameraGroup(pygame.sprite.Group):
         self.center_target_camera(target)
 
         # zoom
-        self.internal_surface.fill((0, 0, 0))
+        self.internal_surface.fill((64, 57, 64))
 
         for sprite in self.sprites():
-            offset_pos = sprite.rect.topleft - self.offset
+            offset_pos = sprite.rect.topleft - self.offset + self.internal_offset
             self.internal_surface.blit(sprite.image, offset_pos)
 
         scaled_surface = pygame.transform.scale(
             self.internal_surface,
             self.internal_surface_size_vector * self.zoom_scale,
         )
-        scaled_rect = scaled_surface.get_rect(
-            center=(self.half_w, self.half_h)
-        )
+        scaled_rect = scaled_surface.get_rect(center=(self.half_w, self.half_h))
 
         self.display_surface.blit(
             scaled_surface,

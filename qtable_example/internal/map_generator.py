@@ -6,14 +6,23 @@ from qtable_example.enums import Directions
 
 class MapGenerator:
 
-    # Settings
-    MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = 0.5
-    MAX_REWARD = 10.0
-    MIN_REWARD = 0.0
-
-    def __init__(self, grid: Grid, map_max_length: int = 100):
+    def __init__(
+        self,
+        grid: Grid,
+        map_max_length: int = 100,
+        max_reward: float = 10.0,
+        min_reward: float = 0.0,
+        max_cell_neighbors: int = 2,
+        map_generation_create_subpath_probability: float = 0.5,
+    ):
         self.grid = grid
         self.map_max_length = map_max_length
+        self.max_reward = max_reward
+        self.min_reward = min_reward
+        self.max_cell_neighbors = max_cell_neighbors
+        self.map_generation_create_subpath_probability = (
+            map_generation_create_subpath_probability
+        )
 
     def generate_map(self, start_cell_position: tuple[int, int], seed: int = 0) -> None:
         """
@@ -60,7 +69,7 @@ class MapGenerator:
 
             # verifica se deve criar um subcaminho
             p = random.random()
-            if p < self.MAP_GENERATION_CREATE_SUBPATH_PROBABILITY:
+            if p < self.map_generation_create_subpath_probability:
                 # cria um subcaminho
                 self.generate_path(
                     start_cell_tile=last_tile, max_length=max_length - current_length
@@ -82,7 +91,7 @@ class MapGenerator:
                 )
                 neighbors = self.grid.get_neighbors(future_cell_pos, diagonal=False)
 
-                if self._count_neighbors(neighbors) < 2:
+                if self._count_neighbors(neighbors) < self.max_cell_neighbors:
                     break
                 direction = None
 
@@ -91,6 +100,7 @@ class MapGenerator:
                 break
             new_tile = self.grid.add_on(last_tile, direction)
             last_tile = new_tile
+            current_length += 1
 
     def _get_valid_directions(self, tile: Tile) -> list[Directions]:
         """
@@ -168,12 +178,17 @@ class MapGenerator:
                 continue
 
             if self.grid.is_terminal(tile.grid_position) and tile != solution:
-                tile.reward = -self.MAX_REWARD
+                tile.reward = self.min_reward
             elif tile != solution:
                 distance = self.calculate_distance(tile, solution)
                 grid_screen_size = self.grid.tile_size * self.grid.grid_size[0]
                 normalized_distance = distance / grid_screen_size
-                reward = (1 - normalized_distance) * self.MAX_REWARD
-                tile.reward = max(0, min(reward, self.MAX_REWARD))
+                reward = 1 - normalized_distance
+
+                # Normaliza a recompensa para o intervalo [min_reward, max_reward]
+                reward = self.min_reward + (
+                    reward * (self.max_reward - self.min_reward)
+                )
+                tile.reward = reward
             else:
-                tile.reward = self.MAX_REWARD
+                tile.reward = self.max_reward

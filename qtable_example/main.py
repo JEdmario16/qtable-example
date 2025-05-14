@@ -18,7 +18,7 @@ GRID_START_POSITION = (0, 0)  # in pixels on the screen
 SEED = 41  # seed for random generation
 MAX_MAX_LENGTH = 100  # max length of the path
 GAME_MAX_REWARD = 10.0  # max reward for the game
-GAME_MIN_REWARD = -10.0  # min reward for the game
+GAME_MIN_REWARD = -200.0  # min reward for the game
 MAX_CELL_NEIGHBORS = 2  # max number of neighbors for each cell when generating the map
 MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = 0.5  # probability of creating a subpath
 

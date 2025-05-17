@@ -14,13 +14,13 @@ import sys
 sys.setrecursionlimit(10**6)
 # Settings
 SCREEN_SIZE = (1920, 1080)
-GRID_SIZE = (20, 20)  # in cells
+GRID_SIZE = (10, 10)  # in cells
 TILE_SIZE = 64
 GRID_START_POSITION = (0, 0)  # in pixels on the screen
 SEED = 41  # seed for random generation
 MAX_MAX_LENGTH = 100  # max length of the path
 GAME_MAX_REWARD = 10.0  # max reward for the game
-GAME_MIN_REWARD = -15.0  # min reward for the game
+GAME_MIN_REWARD = -10  # min reward for the game
 MAX_CELL_NEIGHBORS = 10  # max number of neighbors for each cell when generating the map
 MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = 0.9  # probability of creating a subpath
 
@@ -61,7 +61,7 @@ map_generator.generate_map(
     start_cell_position=grid.get_grid_center(),
 )
 
-solution = grid.generate_random_solution(only_terminal=True)
+solution = grid.generate_random_solution(only_terminal=False)
 map_generator.generate_euclidian_rewards(solution)
 
 camera_center = CameraCenter(camera_group=camera)

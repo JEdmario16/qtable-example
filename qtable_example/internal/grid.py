@@ -89,6 +89,7 @@ class Grid:
         self,
         position: tuple[int, int],
         direction: Directions,
+        ignore_out_of_bounds: bool = False,
     ) -> tuple[int, int] | None:
         """
         Retorna a nova posição seguindo uma direção a partir de uma posição inicial.
@@ -96,6 +97,7 @@ class Grid:
         Args:
             position (tuple[int, int]): Posição inicial (linha, coluna).
             direction (Directions): Direção a seguir.
+            ignore_out_of_bounds (bool): Se True, ignora a verificação de limites.
 
         Returns:
             tuple[int, int] | None: Nova posição (linha, coluna) ou None se fora dos limites.
@@ -103,6 +105,9 @@ class Grid:
         row, col = position
         d_row, d_col = self.DIRECTIONS_DELTA_MAP[direction]
         new_pos = (row + d_row, col + d_col)
+
+        if ignore_out_of_bounds:
+            return new_pos
 
         if not self.is_out_of_bounds(new_pos):
             return new_pos

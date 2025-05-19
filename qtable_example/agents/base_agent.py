@@ -4,6 +4,7 @@ from typing import TypeVar, List, Tuple
 
 T = TypeVar("T")
 
+
 class BaseAgent(ABC):
 
     def __init__(self, action_space: List[T], state_space_dim: Tuple[int, int]):
@@ -22,7 +23,13 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def learn(self, state: Tuple[int, int], action: T, reward: float, next_state: Tuple[int, int]):
+    def learn(
+        self,
+        state: Tuple[int, int],
+        action: T,
+        reward: float,
+        next_state: Tuple[int, int],
+    ):
         pass
 
     @abstractmethod

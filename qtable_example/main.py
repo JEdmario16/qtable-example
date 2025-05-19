@@ -9,19 +9,21 @@ from qtable_example.sprites.tile_sprite import TileSprite
 from qtable_example.internal.grid import Grid
 from qtable_example.internal.map_generator import MapGenerator
 
+from qtable_example.ui.ui_manager import UIManager
+
 import sys
 
 sys.setrecursionlimit(10**6)
 # Settings
 SCREEN_SIZE = (1920, 1080)
-GRID_SIZE = (10, 10)  # in cells
+GRID_SIZE = (30, 30)  # in cells
 TILE_SIZE = 64
 GRID_START_POSITION = (0, 0)  # in pixels on the screen
 SEED = 41  # seed for random generation
 MAX_MAX_LENGTH = 100  # max length of the path
 GAME_MAX_REWARD = 10.0  # max reward for the game
 GAME_MIN_REWARD = -10  # min reward for the game
-MAX_CELL_NEIGHBORS = 10  # max number of neighbors for each cell when generating the map
+MAX_CELL_NEIGHBORS = 2  # max number of neighbors for each cell when generating the map
 MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = 0.9  # probability of creating a subpath
 
 
@@ -35,6 +37,10 @@ running = True
 game_surface_w = SCREEN_SIZE[0] * 0.7
 game_surface_h = SCREEN_SIZE[1] * 1
 game_surface = screen.subsurface(((0, 0, game_surface_w, game_surface_h)))
+
+ui_surface_w = SCREEN_SIZE[0] * 0.3
+ui_surface_h = SCREEN_SIZE[1] * 1
+ui_surface = screen.subsurface((game_surface_w, 0, ui_surface_w, ui_surface_h))
 
 grid_size = (GRID_SIZE[0] * TILE_SIZE, GRID_SIZE[1] * TILE_SIZE)
 
@@ -75,6 +81,8 @@ grid_render.update()
 MAX_ZOOM = 1.5
 MIN_ZOOM = 0.5
 
+ui = UIManager(ui_surface)
+ui.draw()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -84,10 +92,7 @@ while running:
             new_zoom = camera.zoom_scale + event.y * 0.03
             camera.zoom_scale = min(max(new_zoom, MIN_ZOOM), MAX_ZOOM)
 
-    screen.fill((0, 0, 0))
-    game_surface.fill((255, 255, 255))
     camera.update()
     camera.custom_draw(camera_center)
-
     pygame.display.update()
     clock.tick(30)

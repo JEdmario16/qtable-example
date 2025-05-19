@@ -12,3 +12,10 @@ class Directions(Enum):
     UP_RIGHT = 5
     DOWN_LEFT = 6
     DOWN_RIGHT = 7
+
+
+class Unit(Enum):
+    """Enum for size modes."""
+
+    PIXEL = 0
+    PERCENT = 1

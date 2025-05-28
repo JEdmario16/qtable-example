@@ -19,3 +19,13 @@ class Unit(Enum):
 
     PIXEL = 0
     PERCENT = 1
+
+
+class TextAlign(Enum):
+    """Enum for text alignment."""
+
+    LEFT = 0
+    CENTER = 1
+    RIGHT = 2
+    TOP = 3
+    BOTTOM = 4

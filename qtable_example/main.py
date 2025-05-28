@@ -28,7 +28,9 @@ MAP_GENERATION_CREATE_SUBPATH_PROBABILITY = 0.9  # probability of creating a sub
 
 
 pygame.init()
-screen = pygame.display.set_mode(SCREEN_SIZE)
+screen = pygame.display.set_mode(
+    SCREEN_SIZE, pygame.RESIZABLE | pygame.DOUBLEBUF, pygame.SRCALPHA
+)
 pygame.display.set_caption("Grid Renderer Example")
 clock = pygame.time.Clock()
 running = True
@@ -94,5 +96,6 @@ while running:
 
     camera.update()
     camera.custom_draw(camera_center)
+    ui.update()
     pygame.display.update()
     clock.tick(30)
